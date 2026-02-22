@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+python-multipart
+openai
+moviepy
+opencv-python
+SQLAlchemy
+psycopg2-binary
+pydantic-settings
+yt-dlp
+imageio_ffmpeg
+python-docx
+PyPDF2

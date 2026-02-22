@@ -1,0 +1,6 @@
+@echo off
+echo Starting Dhurandhar Frontend...
+cd /d "%~dp0frontend"
+
+echo Starting Vite dev server...
+npm run dev

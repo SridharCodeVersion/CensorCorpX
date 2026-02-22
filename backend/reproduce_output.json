@@ -1,0 +1,114 @@
+{
+  "content_id": "2b176b82-7e2c-4b77-884a-3d5d3eed32bd",
+  "duration": 9.0,
+  "segments": [
+    {
+      "id": "a824d1e0-4093-487f-9c40-baa12309e9b1",
+      "start": 0.4444444444444444,
+      "end": 0.5555555555555556,
+      "labels": [
+        "Abusive Language"
+      ],
+      "risk_scores": [
+        {
+          "category": "Abusive Language",
+          "score": 0.6
+        }
+      ],
+      "reason": null,
+      "confidence": null,
+      "peak_risk_str": null,
+      "start_time": null,
+      "end_time": null
+    },
+    {
+      "id": "cb5379ca-80fc-47e1-b754-37cb94be4f18",
+      "start": 0.8888888888888888,
+      "end": 1.0,
+      "labels": [
+        "Violence"
+      ],
+      "risk_scores": [
+        {
+          "category": "Violence",
+          "score": 0.9
+        }
+      ],
+      "reason": null,
+      "confidence": null,
+      "peak_risk_str": null,
+      "start_time": null,
+      "end_time": null
+    }
+  ],
+  "certification_before": "S",
+  "certification_after": "A",
+  "overall_risk": 0.9,
+  "heatmap": [
+    {
+      "start": 0.4444444444444444,
+      "end": 0.5555555555555556,
+      "intensity": 0.6,
+      "categories": [
+        "Abusive Language"
+      ]
+    },
+    {
+      "start": 0.8888888888888888,
+      "end": 1.0,
+      "intensity": 0.9,
+      "categories": [
+        "Violence"
+      ]
+    }
+  ],
+  "analysis_cards": [
+    {
+      "title": "Input Summary",
+      "body": "Post about: This politician is an idiot..."
+    },
+    {
+      "title": "Sanitization",
+      "body": "Sanitized offensive terms while keeping sentence structure."
+    },
+    {
+      "title": "Risk Assessment",
+      "body": "Overall risk 90/100 driven by Abusive Language, Violence."
+    },
+    {
+      "title": "Certification",
+      "body": "Moved from S to A by removing specific trigger words."
+    }
+  ],
+  "certification_logic": null,
+  "sanitized_content": "This politician is an *** and should be ***",
+  "censored_elements": [
+    {
+      "category": "Abusive Language",
+      "original": "idiot",
+      "reason": "Degrading language",
+      "severity": "Medium"
+    },
+    {
+      "category": "Violence",
+      "original": "attacked.",
+      "reason": "Encourages physical harm",
+      "severity": "High"
+    }
+  ],
+  "risk_breakdown": [
+    {
+      "category": "Abusive Language",
+      "score": 60.0
+    },
+    {
+      "category": "Violence",
+      "score": 90.0
+    }
+  ],
+  "certification_reason": "Moved from S to A by removing specific trigger words.",
+  "ai_analysis_input": "Post about: This politician is an idiot...",
+  "ai_analysis_output": "Sanitized offensive terms while keeping sentence structure.",
+  "ai_analysis_risk": "Overall risk 90/100 driven by Abusive Language, Violence.",
+  "ai_analysis_cert": "Moved from S to A by removing specific trigger words."
+}

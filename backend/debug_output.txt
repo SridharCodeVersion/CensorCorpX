@@ -1,0 +1,43 @@
+Testing User URL:
+--- Testing yt-dlp for https://x.com/elonmusk/status/2018068911875346740 ---
+yt-dlp returned None
+--- Testing requests+bs4 for https://x.com/elonmusk/status/2018068911875346740 ---
+Status Code: 200
+No open graph description found.
+Page Title: No Title
+--- Testing Nitter Fallback for https://x.com/elonmusk/status/2018068911875346740 ---
+Nitter URL: https://nitter.net/elonmusk/status/2018068911875346740
+Status Code: 200
+Could not find .tweet-content in Nitter response
+--- Testing FxTwitter API for https://x.com/elonmusk/status/2018068911875346740 ---
+FxTwitter URL: https://api.fxtwitter.com/elonmusk/status/2018068911875346740
+Status Code: 200
+FxTwitter Text: Nobody has fought harder for full release of the Epstein files and prosecutions of those who abused children more than I did, knowing full well that the legacy media, far-left propagandists and those who are actually guilty would:
+
+1. Admit nothing
+2. Deny everything 
+3. Make counter-accusations against me
+
+I knew that I would be smeared relentlessly, despite never having attended his parties or been on his “Lolita Express” plane or set foot on his creepy island or done anything wrong at all. 
+
+Nonetheless, the extreme pain of being accused of being the opposite of who I am was worth it. 
+
+The strong must protect those cannot protect themselves, especially vulnerable children. I will gladly accept any amount of future pain to do more to protect kids and give them a chance to grow up and have happy lives.
+FxTwitter Author: Elon Musk
+
+Testing Real URL:
+--- Testing yt-dlp for https://twitter.com/elonmusk/status/1608273870901096454 ---
+yt-dlp returned None
+--- Testing requests+bs4 for https://twitter.com/elonmusk/status/1608273870901096454 ---
+Status Code: 200
+No open graph description found.
+Page Title: No Title
+--- Testing Nitter Fallback for https://twitter.com/elonmusk/status/1608273870901096454 ---
+Nitter URL: https://nitter.net/elonmusk/status/1608273870901096454
+Status Code: 200
+Could not find .tweet-content in Nitter response
+--- Testing FxTwitter API for https://twitter.com/elonmusk/status/1608273870901096454 ---
+FxTwitter URL: https://api.fxtwitter.com/elonmusk/status/1608273870901096454
+Status Code: 200
+FxTwitter Text: @BillyM2k @greg16676935420 Works for me
+FxTwitter Author: Elon Musk
