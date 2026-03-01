@@ -1,4 +1,4 @@
-# Dhurandhar AI - Content Censorship Intelligence Platform
+# CensorCorpX AI - Content Censorship Intelligence Platform
 ## System Design Document
 
 ---
@@ -19,7 +19,7 @@
 
 ### 1.1 Purpose
 
-Dhurandhar AI is an intelligent content censorship platform designed to automate the detection, analysis, and moderation of multimedia content across various platforms including OTT services, YouTube, music streaming, social media, and documentation repositories. The system leverages AI-powered analysis to identify sensitive content segments and provides flexible censorship options while maintaining human oversight.
+CensorCorpX AI is an intelligent content censorship platform designed to automate the detection, analysis, and moderation of multimedia content across various platforms including OTT services, YouTube, music streaming, social media, and documentation repositories. The system leverages AI-powered analysis to identify sensitive content segments and provides flexible censorship options while maintaining human oversight.
 
 ### 1.2 Key Capabilities
 
@@ -2002,7 +2002,7 @@ spec:
 
 ## 10. Conclusion
 
-The Dhurandhar AI Content Censorship Intelligence Platform is designed as a modern, scalable, and secure system for automated content moderation. The architecture emphasizes:
+The CensorCorpX AI Content Censorship Intelligence Platform is designed as a modern, scalable, and secure system for automated content moderation. The architecture emphasizes:
 
 - **Modularity**: Clear separation of concerns between frontend, backend, and external services
 - **Scalability**: Asynchronous processing, horizontal scaling, and caching strategies
@@ -2017,4 +2017,4 @@ The current prototype demonstrates core functionality with in-memory storage and
 **Document Version**: 1.0  
 **Date**: February 14, 2026  
 **Status**: Final Draft  
-**Authors**: Team Dhurandhar AI
+**Authors**: Team CensorCorpX AI

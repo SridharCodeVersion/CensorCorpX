@@ -207,6 +207,49 @@ export const OttEditor: React.FC = () => {
   /** Duration in seconds for timeline (analysis or video metadata) */
   const timelineDuration = current.durationSeconds ?? videoDurationSeconds
 
+  const formatTime = (sec: number) => {
+    const m = Math.floor(sec / 60)
+    const s = Math.floor(sec % 60)
+    return `${m}:${s.toString().padStart(2, '0')}`
+  }
+
+  const updateSegmentTime = (id: string, field: 'start' | 'end', val: string) => {
+    const sec = parseFloat(val)
+    if (isNaN(sec)) return
+    const ratio = sec / timelineDuration
+    setTabState('ott', (prev) => ({
+      ...prev,
+      segments: prev.segments.map(s => s.id === id ? { ...s, [field]: ratio } : s)
+    }))
+  }
+
+  const addSegment = () => {
+    const id = `manual-${Date.now()}`
+    const newSeg = {
+      id,
+      start: 0,
+      end: 0.1,
+      labels: ['manual'],
+      riskScores: [],
+      start_time: '00:00:00',
+      end_time: '00:00:05',
+      confidence: '1.0',
+      peak_risk_str: 'Manual'
+    }
+    setTabState('ott', (prev) => ({
+      ...prev,
+      segments: [...prev.segments, newSeg as any],
+      review: { ...(prev.review || {}), [id]: true }
+    }))
+  }
+
+  const deleteSegment = (id: string) => {
+    setTabState('ott', (prev) => ({
+      ...prev,
+      segments: prev.segments.filter(s => s.id !== id)
+    }))
+  }
+
   /** Approved segments that will be censored, with start/end in seconds */
   const approvedSegmentsSeconds = useMemo(() => {
     if (timelineDuration <= 0) return []
@@ -221,12 +264,6 @@ export const OttEditor: React.FC = () => {
   }, [segmentsSorted, current.review, timelineDuration])
 
   const certification = current.certification
-
-  const formatTime = (sec: number) => {
-    const m = Math.floor(sec / 60)
-    const s = Math.floor(sec % 60)
-    return `${m}:${s.toString().padStart(2, '0')}`
-  }
 
   // Helper for options
   const opts = current.options || {}
@@ -486,7 +523,17 @@ export const OttEditor: React.FC = () => {
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-3 text-xs space-y-3">
           <div className="space-y-2">
-            <div className="text-[11px] text-zinc-500 dark:text-zinc-400">Detected segments (toggle to approve/reject)</div>
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                Detected segments (toggle to approve/reject)
+              </div>
+              <button
+                onClick={addSegment}
+                className="px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-700 text-[10px] hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                + Add Segment
+              </button>
+            </div>
             {segmentsSorted.length === 0 && (
               <div className="text-[11px] text-zinc-500">
                 No segments yet. Run AI to detect sensitive portions.
@@ -509,14 +556,44 @@ export const OttEditor: React.FC = () => {
                         ({s.start_time ?? `${Math.round(s.start * 100)}%`}–{s.end_time ?? `${Math.round(s.end * 100)}%`})
                       </span>
                     </div>
-                    <label className="flex items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-                      <input
-                        type="checkbox"
-                        checked={approved}
-                        onChange={(e) => setTabState('ott', prev => ({ ...prev, review: { ...(prev.review || {}), [s.id]: e.target.checked } }))}
-                      />
-                      Approve
-                    </label>
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1 text-[10px] text-zinc-500 dark:text-zinc-400 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={approved}
+                          onChange={(e) => setTabState('ott', prev => ({ ...prev, review: { ...(prev.review || {}), [s.id]: e.target.checked } }))}
+                        />
+                        Approve
+                      </label>
+                      <button title="Delete" onClick={() => deleteSegment(s.id)} className="text-zinc-400 hover:text-red-500">
+                        &times;
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Editing Inputs */}
+                  <div className="flex items-center gap-2 text-[10px] text-zinc-500 mb-1">
+                    <span>Start:</span>
+                    <input
+                      type="number"
+                      step="0.1"
+                      className="w-12 px-1 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-800 dark:text-zinc-200"
+                      value={(s.start * timelineDuration).toFixed(1)}
+                      onChange={(e) => updateSegmentTime(s.id, 'start', e.target.value)}
+                      disabled={!approved}
+                    />
+                    <span>s</span>
+
+                    <span className="ml-2">End:</span>
+                    <input
+                      type="number"
+                      step="0.1"
+                      className="w-12 px-1 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-800 dark:text-zinc-200"
+                      value={(s.end * timelineDuration).toFixed(1)}
+                      onChange={(e) => updateSegmentTime(s.id, 'end', e.target.value)}
+                      disabled={!approved}
+                    />
+                    <span>s</span>
                   </div>
                   {(s.confidence || s.peak_risk_str) && (
                     <div className="mt-1 text-[10px] text-zinc-500">

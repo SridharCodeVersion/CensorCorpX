@@ -1,4 +1,4 @@
-# Dhurandhar AI - Content Censorship Intelligence Platform
+# CensorCorpX AI - Content Censorship Intelligence Platform
 ## Requirements Document
 
 ---
@@ -15,7 +15,7 @@ Content platforms (OTT, YouTube, social media, music streaming, and documentatio
 - **Certification mapping**: No automated content rating/certification based on detected risks
 - **Reversibility**: Inability to undo or restore previous censorship decisions
 
-Dhurandhar AI addresses these challenges by providing an AI-powered, multi-modal censorship intelligence platform that detects, analyzes, scores, and applies customizable censorship treatments while maintaining human oversight and full audit trails.
+CensorCorpX AI addresses these challenges by providing an AI-powered, multi-modal censorship intelligence platform that detects, analyzes, scores, and applies customizable censorship treatments while maintaining human oversight and full audit trails.
 
 ---
 
@@ -124,7 +124,7 @@ Dhurandhar AI addresses these challenges by providing an AI-powered, multi-modal
 
 #### FR-11: Contextual AI Chat
 - **FR-11.1**: Provide chat interface for user questions
-- **FR-11.2**: Enforce strict on-topic responses (Dhurandhar usage, interpretation of results)
+- **FR-11.2**: Enforce strict on-topic responses (CensorCorpX usage, interpretation of results)
 - **FR-11.3**: Refuse off-topic queries with polite redirection
 - **FR-11.4**: Provide short, concise answers (2-3 sentences)
 - **FR-11.5**: Display get-started cards with common questions
@@ -517,4 +517,4 @@ Dhurandhar AI addresses these challenges by providing an AI-powered, multi-modal
 - **Version**: 1.0
 - **Date**: February 14, 2026
 - **Status**: Draft
-- **Authors**: Team Dhurandhar AI
+- **Authors**: Team CensorCorpX AI

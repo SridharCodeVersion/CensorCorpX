@@ -12,7 +12,7 @@ import { TabProvider, useTabContext } from './state/TabContext'
 import type { ContentType } from './state/TabContext'
 
 const TopNav: React.FC = () => {
-  const { activeTab, setActiveTab, setUiState, state } = useTabContext()
+  const { activeTab, setActiveTab, state } = useTabContext()
   const tabs: { id: ContentType; label: string }[] = [
     { id: 'ott', label: 'OTT' },
     { id: 'youtube', label: 'YouTube Video' },
@@ -36,7 +36,7 @@ const TopNav: React.FC = () => {
           className="px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 rounded shadow-sm text-zinc-900 dark:text-zinc-100 font-bold text-base tracking-wide hover:scale-105 transition-transform duration-200 cursor-default"
           style={{ fontFamily: '"Copperplate Gothic", "Copperplate Gothic Light", serif' }}
         >
-          Dhurandhar AI
+          CensorCorpX
         </div>
       </div>
 
@@ -88,11 +88,11 @@ const SubHeader: React.FC = () => {
   const { activeTab } = useTabContext()
 
   const punchlines: Record<ContentType, string> = {
-    ott: "Team Dhurandhar AI: AI-powered scene-level detection, censorship, risk scoring, and certification for OTT platforms.",
-    youtube: "Team Dhurandhar AI: Automated AI moderation for videos detecting abuse, misinformation, copyright risks, and harmful content.",
-    music: "Team Dhurandhar AI: Intelligent audio-visual censorship that removes explicit content while preserving musical flow and quality.",
-    social: "Team Dhurandhar AI: AI sanitization of posts to prevent policy, safety, and compliance violations.",
-    docs: "Team Dhurandhar AI: Context-aware AI censorship and risk analysis for text, research, news, and sensitive documents."
+    ott: "CensorCorpX: AI-powered scene-level detection, censorship, risk scoring, and certification for OTT platforms.",
+    youtube: "CensorCorpX: Automated AI moderation for videos detecting abuse, misinformation, copyright risks, and harmful content.",
+    music: "CensorCorpX: Intelligent audio-visual censorship that removes explicit content while preserving musical flow and quality.",
+    social: "CensorCorpX: AI sanitization of posts to prevent policy, safety, and compliance violations.",
+    docs: "CensorCorpX: Context-aware AI censorship and risk analysis for text, research, news, and sensitive documents."
   }
 
   return (

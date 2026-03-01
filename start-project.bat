@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo   Dhurandhar AI - Project Launcher
+echo   CensorCorpX AI - Project Launcher
 echo ========================================
 echo.
 echo This script will start both:
@@ -13,7 +13,7 @@ echo.
 
 REM Start Backend in a new window
 echo Starting Backend Server...
-start "Dhurandhar Backend (Port 8000)" cmd /k "cd /d "%~dp0backend" && (if exist "venv\Scripts\activate.bat" (call venv\Scripts\activate.bat) else if exist "venv_new\Scripts\activate.bat" (call venv_new\Scripts\activate.bat) else (echo ERROR: No virtual environment found! && pause && exit /b 1)) && echo Backend server starting on http://localhost:8000... && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+start "CensorCorpX Backend (Port 8000)" cmd /k "cd /d "%~dp0backend" && (if exist "venv\Scripts\activate.bat" (call venv\Scripts\activate.bat) else if exist "venv_new\Scripts\activate.bat" (call venv_new\Scripts\activate.bat) else (echo ERROR: No virtual environment found! && pause && exit /b 1)) && echo Backend server starting on http://localhost:8000... && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
 REM Wait 3 seconds for backend to initialize
 echo Waiting for backend to initialize...
@@ -21,7 +21,7 @@ timeout /t 3 /nobreak >nul
 
 REM Start Frontend in a new window
 echo Starting Frontend Server...
-start "Dhurandhar Frontend (Port 1139)" cmd /k "cd /d "%~dp0frontend" && echo Frontend server starting... && npm run dev"
+start "CensorCorpX Frontend (Port 1139)" cmd /k "cd /d "%~dp0frontend" && echo Frontend server starting... && npm run dev"
 
 echo.
 echo ========================================

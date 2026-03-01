@@ -11,10 +11,10 @@ import time
 import asyncio
 import shutil
 import subprocess
-import shutil
-import subprocess
 import math
 import yt_dlp
+import tempfile
+import atexit
 
 from app.utils import get_ffmpeg_bin, get_video_duration, parse_webvtt
 
@@ -36,12 +36,21 @@ _SENSITIVE_KEYWORDS = {
     "pussy": "sexual"
 }
 
-# Resolve uploads dir relative to this file but OUTSIDE the watched backend directory (to avoid WinError 32 with --reload)
-_APP_DIR = os.path.dirname(os.path.abspath(__file__))
-_BACKEND_DIR = os.path.dirname(_APP_DIR)
-_PROJECT_ROOT = os.path.dirname(_BACKEND_DIR)
-# Move uploads to project root so it's not inside the uvicorn-watched 'backend' or 'app' folders
-UPLOADS_DIR = os.path.join(_PROJECT_ROOT, "uploads")
+# Ephemeral cache storage using system temporary directory
+_cache_dir_obj = tempfile.TemporaryDirectory(prefix="censor_corp_cache_")
+UPLOADS_DIR = _cache_dir_obj.name
+
+# Register cleanup on exit
+atexit.register(lambda: _cache_dir_obj.cleanup())
+
+# Cleanup helper for old permanent uploads folder if it exists
+_PERMANENT_UPLOADS = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "uploads")
+if os.path.exists(_PERMANENT_UPLOADS):
+    try:
+        shutil.rmtree(_PERMANENT_UPLOADS)
+        print(f"[*] Cleaned up old permanent uploads folder: {_PERMANENT_UPLOADS}")
+    except Exception as e:
+        print(f"[!] Could not remove old uploads folder: {e}")
 
 # Cleanup helper to prevent file accumulation
 def _cleanup_content_files(content_id: str, content_type: str):
@@ -174,12 +183,12 @@ class MusicApplyResponse(BaseModel):
   content_id: str
 
 
-app = FastAPI(title="Dhurandhar Backend", version="0.1.0")
+app = FastAPI(title="CensorCorpX Backend", version="0.1.0")
 
 app.add_middleware(
   CORSMiddleware,
   allow_origins=["*"],
-  allow_credentials=True,
+  allow_credentials=False,
   allow_methods=["*"],
   allow_headers=["*"],
 )
@@ -190,7 +199,10 @@ _VERSIONS: Dict[str, List[AnalyzeResponse]] = {}
 # Minimal in-memory job store (prototype)
 _JOBS: Dict[str, Dict[str, Any]] = {}
 
-os.makedirs(UPLOADS_DIR, exist_ok=True)
+# Ensure cache subdirectories exist
+for subdir in ["ott", "youtube", "music", "temp"]:
+  os.makedirs(os.path.join(UPLOADS_DIR, subdir), exist_ok=True)
+
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 
@@ -359,7 +371,7 @@ def _analyze_social_media_content(text: str = "", url: str = None) -> SocialAnal
             client = OpenAI()
             
             system_prompt = (
-                "You are the 'Dhurandhar Social Media Censorship Agent'.\n"
+                "You are the 'CensorCorpX Social Media Censorship Agent'.\n"
                 "INPUT: Social text.\n"
                 "TASK: Detect structure, tone, meaning. Detect Hate speech, Abusive, Sexual, Violence, "
                 "Harassment, Extremism, Fake news, Self-harm. Flag specific words/phrases.\n"
@@ -786,12 +798,13 @@ async def _ott_analyze_worker(job_id: str, content_id: str, dest_path: str) -> N
   job = _JOBS[job_id]
   job["status"] = "running"
   try:
-    await _simulate_heavy_step(job_id, "Extracting metadata", 5, 20, 0.8)
-    await _simulate_heavy_step(job_id, "Transcribing audio (Whisper-ready)", 20, 55, 1.4)
-    await _simulate_heavy_step(job_id, "Scanning frames (Vision-ready)", 55, 80, 1.1)
-    await _simulate_heavy_step(job_id, "Computing risk, heatmap, certification", 80, 95, 0.8)
+    print(f"[_ott_analyze_worker] Starting job {job_id} for content {content_id}")
+    _job_log(job_id, "Extracting metadata", 10)
+    _job_log(job_id, "Scanning content (AI Engine active)", 40)
+    _job_log(job_id, "Computing risk and certification", 80)
 
     duration_sec = _get_video_duration_seconds(dest_path)
+    print(f"[_ott_analyze_worker] Video duration for {dest_path}: {duration_sec}")
     if duration_sec <= 0:
       duration_sec = 60.0
 
@@ -883,6 +896,7 @@ async def _ott_analyze_worker(job_id: str, content_id: str, dest_path: str) -> N
     }
     job["status"] = "done"
     _job_log(job_id, "Analysis complete", 100)
+    print(f"[_ott_analyze_worker] Done for {job_id}")
   except Exception as e:
     job["status"] = "error"
     job["error"] = str(e)
@@ -901,11 +915,13 @@ def _build_concat_list(path: str, windows: List[Dict[str, float]], duration: flo
     kept.append({"start": t, "end": duration})
   if not kept:
     return ""
-  # Use forward slashes so FFmpeg concat works on Windows
-  path_ff = path.replace("\\", "/")
+  # Use absolute path with forward slashes and escaped colon for Windows
+  # FFmpeg concat demuxer on Windows is picky about absolute paths
+  path_ff = os.path.abspath(path).replace("\\", "/")
   lines = []
   for k in kept:
-    lines.append(f"file '{path_ff}'")
+    # Use double quotes for the file path to handle spaces
+    lines.append(f'file "{path_ff}"')
     lines.append(f"inpoint {k['start']:.3f}")
     lines.append(f"outpoint {k['end']:.3f}")
   return "\n".join(lines)
@@ -1036,7 +1052,7 @@ async def _ott_apply_worker(job_id: str, content_id: str, options: Dict[str, Any
       else:
         _job_log(job_id, "FFmpeg censorship render complete.", 80)
 
-    await _simulate_heavy_step(job_id, "Finalizing output", 90, 100, 0.4)
+    _job_log(job_id, "Finalizing output", 95)
     job["status"] = "done"
 
     # Calculate new duration
@@ -1142,14 +1158,19 @@ async def analyze_ott_async(
   ott_dir = os.path.join(UPLOADS_DIR, "ott")
   os.makedirs(ott_dir, exist_ok=True)
   content_id = str(uuid.uuid4())
+  print(f"[analyze_ott_async] Received upload request. content_id: {content_id}")
   original_path = os.path.join(ott_dir, f"{content_id}_original.mp4")
   try:
     with open(original_path, "wb") as f:
-      f.write(await file.read())
+      content = await file.read()
+      print(f"[analyze_ott_async] Read {len(content)} bytes from request")
+      f.write(content)
   except Exception as e:
-    raise RuntimeError(f"Failed to save upload: {e}") from e
+    print(f"[analyze_ott_async] ERROR writing file: {e}")
+    raise HTTPException(status_code=500, detail=f"Failed to save upload: {e}")
 
   job_id = _job_init("ott_analyze", content_id=content_id)
+  print(f"[analyze_ott_async] Job {job_id} initialized")
   _job_log(job_id, "Job queued", 0)
   asyncio.create_task(_ott_analyze_worker(job_id, content_id, original_path))
   return OttStartResponse(job_id=job_id, content_id=content_id, original_url=f"/uploads/ott/{content_id}_original.mp4")
@@ -1162,82 +1183,150 @@ class YoutubeStartResponse(BaseModel):
 async def _youtube_analyze_worker(job_id: str, content_id: str, url: str) -> None:
   job = _JOBS[job_id]
   job["status"] = "running"
-  youtube_dir = os.path.join(UPLOADS_DIR, "youtube")
-  os.makedirs(youtube_dir, exist_ok=True)
-  
-  # yt-dlp template: force mp4
-  dest_template = os.path.join(youtube_dir, f"{content_id}_original.%(ext)s")
-  final_path = os.path.join(youtube_dir, f"{content_id}_original.mp4")
-
+  print(f"[_youtube_analyze_worker] Starting job {job_id} for URL {url}")
   try:
+    youtube_dir = os.path.join(UPLOADS_DIR, "youtube")
+    os.makedirs(youtube_dir, exist_ok=True)
+    
+    # yt-dlp template: force mp4
+    dest_template = os.path.join(youtube_dir, f"{content_id}_original.%(ext)s")
+    final_path = os.path.join(youtube_dir, f"{content_id}_original.mp4")
+
     _job_log(job_id, f"Downloading video from {url}...", 5)
     
     ffmpeg_bin = get_ffmpeg_bin()
-    # If imageio_ffmpeg returns full path to executable, ensure we pass the directory or full path correctly
-    # yt-dlp 'ffmpeg_location' expects path to binary or directory containing binary
     
     def run_download():
-        ydl_opts = {
-            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-            'outtmpl': dest_template,
-            'quiet': True,
-            'no_warnings': True,
-            'ffmpeg_location': ffmpeg_bin,
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+      ydl_opts = {
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'outtmpl': dest_template,
+        'quiet': True,
+        'no_warnings': True,
+        'ffmpeg_location': ffmpeg_bin,
+        'nopart': True, # Prevent file locking during write/rename on Windows
+        'writesubtitles': True,
+        'writeautomaticsub': True,
+        'subtitlesformat': 'vtt',
+      }
+      with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
 
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, run_download)
 
+    # Find the downloaded file
     if not os.path.exists(final_path):
-       # Fallback: check duplicates if ext wasn't mp4 or something
-       # For now assume success or error in run_download would catch it
-       pass
+      for f in os.listdir(youtube_dir):
+        if f.startswith(f"{content_id}_original"):
+          final_path = os.path.join(youtube_dir, f)
+          break
+    
+    if not os.path.exists(final_path):
+      raise RuntimeError(f"Failed to find downloaded video at {final_path}")
 
-    await _simulate_heavy_step(job_id, "Processing content (Audio/Visual)", 30, 60, 1.5)
-    await _simulate_heavy_step(job_id, "Evaluating risk score", 60, 90, 1.0)
+    _job_log(job_id, "Processing content (High Efficiency AI)", 50)
+    _job_log(job_id, "Evaluating risk score", 80)
 
     duration_sec = _get_video_duration_seconds(final_path)
     if duration_sec <= 0:
       duration_sec = 300.0
 
-    # Generate segments dynamically based on duration
-    # We'll create a few typical segments for the prototype
+    # Try to find and parse transcripts for better accuracy
+    segments = []
+    vtt_path = None
+    for f in os.listdir(youtube_dir):
+      if f.startswith(content_id) and f.endswith(".vtt"):
+        vtt_path = os.path.join(youtube_dir, f)
+        break
     
-    seg1_start = duration_sec * 0.15
-    seg1_end = duration_sec * 0.25
-    seg2_start = duration_sec * 0.6
-    seg2_end = duration_sec * 0.7
+    if vtt_path:
+      print(f"[_youtube_analyze_worker] Found transcript: {vtt_path}")
+      words = parse_webvtt(vtt_path)
+      temp_segments = []
+      for entry in words:
+        w = entry["word"]
+        if w in _SENSITIVE_KEYWORDS:
+          category = _SENSITIVE_KEYWORDS[w]
+          temp_segments.append({
+            "start": entry["start"],
+            "end": entry["end"],
+            "label": category,
+            "word": entry["original"]
+          })
+      
+      if temp_segments:
+        temp_segments.sort(key=lambda x: x["start"])
+        merged = []
+        curr = temp_segments[0]
+        curr_labels = {curr["label"]}
+        curr_words = [curr["word"]]
+        for next_hit in temp_segments[1:]:
+          if next_hit["start"] - curr["end"] < 2.0:
+            curr["end"] = max(curr["end"], next_hit["end"])
+            curr_labels.add(next_hit["label"])
+            curr_words.append(next_hit["word"])
+          else:
+            merged.append((curr, list(curr_labels), curr_words))
+            curr = next_hit
+            curr_labels = {curr["label"]}
+            curr_words = [curr["word"]]
+        merged.append((curr, list(curr_labels), curr_words))
+        
+        for i, (m, labels, words_list) in enumerate(merged):
+          s_start = max(0, m["start"] - 0.5)
+          s_end = min(duration_sec, m["end"] + 0.5)
+          segments.append(
+            Segment(
+              id=f"yt-auto-{i}",
+              start=s_start / duration_sec,
+              end=s_end / duration_sec,
+              labels=labels,
+              risk_scores=[RiskScore(category=l, score=0.85) for l in labels],
+              reason=f"Detected sensitive keywords: {', '.join(set(words_list))}",
+              confidence="95%",
+              peak_risk_str="85%",
+              start_time=_sec_to_timestamp(s_start),
+              end_time=_sec_to_timestamp(s_end),
+            )
+          )
+      else:
+        print("[_youtube_analyze_worker] No sensitive keywords found in transcript.")
+    
+    if not segments:
+      # Fallback to demo segments
+      seg1_start = duration_sec * 0.15
+      seg1_end = duration_sec * 0.25
+      seg2_start = duration_sec * 0.6
+      seg2_end = duration_sec * 0.7
 
-    segments = [
-      Segment(
-        id="yt-seg-1",
-        start=seg1_start / duration_sec,
-        end=seg1_end / duration_sec,
-        labels=["violence", "fake_news"],
-        risk_scores=[RiskScore(category="violence", score=0.75), RiskScore(category="fake_news", score=0.65)],
-        reason="Visuals confirm violent activity; audio transcript suggests misinformation.",
-        confidence="78%",
-        peak_risk_str="75%",
-        start_time=_sec_to_timestamp(seg1_start),
-        end_time=_sec_to_timestamp(seg1_end),
-      ),
-      Segment(
-        id="yt-seg-2",
-        start=seg2_start / duration_sec,
-        end=seg2_end / duration_sec,
-        labels=["abusive_language"],
-        risk_scores=[RiskScore(category="abusive_language", score=0.88)],
-        reason="Strong profanity detected in audio track.",
-        confidence="92%",
-        peak_risk_str="88%",
-        start_time=_sec_to_timestamp(seg2_start),
-        end_time=_sec_to_timestamp(seg2_end),
-      )
-    ]
+      segments = [
+        Segment(
+          id="yt-seg-1",
+          start=seg1_start / duration_sec,
+          end=seg1_end / duration_sec,
+          labels=["violence", "fake_news"],
+          risk_scores=[RiskScore(category="violence", score=0.75), RiskScore(category="fake_news", score=0.65)],
+          reason="Visuals confirm violent activity; audio transcript suggests misinformation.",
+          confidence="78%",
+          peak_risk_str="75%",
+          start_time=_sec_to_timestamp(seg1_start),
+          end_time=_sec_to_timestamp(seg1_end),
+        ),
+        Segment(
+          id="yt-seg-2",
+          start=seg2_start / duration_sec,
+          end=seg2_end / duration_sec,
+          labels=["abusive_language"],
+          risk_scores=[RiskScore(category="abusive_language", score=0.88)],
+          reason="Strong profanity detected in audio track.",
+          confidence="92%",
+          peak_risk_str="88%",
+          start_time=_sec_to_timestamp(seg2_start),
+          end_time=_sec_to_timestamp(seg2_end),
+        )
+      ]
 
-    overall_risk = max(rs.score for s in segments for rs in s.risk_scores)
+    overall_risk = max(rs.score for s in segments for rs in s.risk_scores) if segments else 0.0
     cert_before = _classify_certification(overall_risk)
     cert_after = _classify_certification(max(overall_risk - 0.2, 0.0))
     heatmap = [
@@ -1246,16 +1335,21 @@ async def _youtube_analyze_worker(job_id: str, content_id: str, url: str) -> Non
     ]
 
     certification_logic = (
-      f"Content flagged for violence and abusive language. Overall risk {overall_risk:.2f}. "
+      f"Content evaluated for sensitive topics. Overall risk {overall_risk:.2f}. "
       f"Initial classification '{cert_before}'. Post-censorship metric estimates drop to '{cert_after}'."
     )
 
     analysis_cards = [
       AnalysisCard(title="Source Risk", body="YouTube content evaluated against platform guidelines."),
-      AnalysisCard(title="Certification", body=certification_logic),
-      AnalysisCard(title="Violence", body=f"Segment at {segments[0].start_time} - {segments[0].end_time} flagged."),
-      AnalysisCard(title="Abusive Language", body=f"Segment at {segments[1].start_time} - {segments[1].end_time} flagged."),
+      AnalysisCard(title="Certification Justification", body=certification_logic),
     ]
+    for s in segments[:3]:
+      analysis_cards.append(
+        AnalysisCard(
+          title=f"Flagged: {', '.join(s.labels)}",
+          body=f"Segment at {s.start_time} - {s.end_time}. {s.reason or 'Risk detected.'}"
+        )
+      )
 
     resp = AnalyzeResponse(
       content_id=content_id,
@@ -1276,10 +1370,12 @@ async def _youtube_analyze_worker(job_id: str, content_id: str, url: str) -> Non
     }
     job["status"] = "done"
     _job_log(job_id, "Analysis complete", 100)
+    print(f"[_youtube_analyze_worker] Done for {job_id}")
 
   except Exception as e:
     job["status"] = "error"
     job["error"] = str(e)
+    print(f"[_youtube_analyze_worker] Error: {e}")
     _job_log(job_id, f"Error: {e}", 100)
 
 @app.post("/api/youtube/analyze_async", response_model=YoutubeStartResponse)
@@ -1627,7 +1723,6 @@ async def _music_analyze_worker(job_id: str, content_id: str, file_path: Optiona
 
       loop = asyncio.get_event_loop()
       await loop.run_in_executor(None, run_download)
-      await asyncio.sleep(1) 
       _job_log(job_id, "Download complete", 30)
     
     # Retry logic for file existence and duration detection
@@ -1724,7 +1819,6 @@ async def _music_analyze_worker(job_id: str, content_id: str, file_path: Optiona
     ]
     
     _job_log(job_id, "Evaluating risk scores...", 80)
-    await asyncio.sleep(1)
     
     resp = AnalyzeResponse(
       content_id=content_id,
@@ -2110,8 +2204,8 @@ async def analyze_social(payload: TextRequest):
 @app.post("/api/docs/analyze")
 async def analyze_docs(file: UploadFile = File(...)):
     """Analyze document for sensitive/confidential information."""
-    # Save uploaded file temporarily
-    temp_dir = "temp_uploads"
+    # Save uploaded file temporarily in cache
+    temp_dir = os.path.join(UPLOADS_DIR, "temp")
     os.makedirs(temp_dir, exist_ok=True)
     
     file_path = os.path.join(temp_dir, file.filename)

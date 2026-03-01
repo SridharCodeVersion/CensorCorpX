@@ -1,6 +1,6 @@
-# Dhurandhar – FastAPI Backend
+# CensorCorpX – FastAPI Backend
 
-This is the FastAPI backend for **Dhurandhar**, an AI-powered censorship intelligence platform.
+This is the FastAPI backend for **CensorCorpX**, an AI-powered censorship intelligence platform.
 
 ## Tech Stack
 
@@ -24,7 +24,7 @@ This is the FastAPI backend for **Dhurandhar**, an AI-powered censorship intelli
 - `POST /api/docs/analyze` – analyze documentation text, return segments + risk + heatmap.
 - `POST /api/review/submit` – human-in-the-loop review of segments, recomputes effective risk and certification and appends a new version into history.
 - `POST /api/history/restore` – undo to previous AI version (per `content_id`), supporting uncensor/rollback.
-- `POST /api/chat` – short, strictly on-topic assistant replies for Dhurandhar usage and interpretations.
+- `POST /api/chat` – short, strictly on-topic assistant replies for CensorCorpX usage and interpretations.
 
 All analysis endpoints return a common `AnalyzeResponse` structure that the frontend expects.
 
